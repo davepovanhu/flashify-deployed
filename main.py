@@ -58,6 +58,7 @@ async def transcribe(file: UploadFile = File(...)):
             "summary": summary_result.text,
         }
 
+# oirgijgoirejgoiwje;gohew;uhw;egh;weihewgoihgeogwihgoigewoiew'gwe'oih
     except Exception as e:
         return {"error": str(e)}
 
