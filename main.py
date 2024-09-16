@@ -4,6 +4,10 @@ import google.generativeai as genai
 import os
 from io import BytesIO
 
+# Configure Google Generative AI API Key
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+print(GOOGLE_API_KEY)
+genai.configure(api_key=GOOGLE_API_KEY)
 app = FastAPI()
 
 # Configure CORS
@@ -14,10 +18,6 @@ app.add_middleware(
     allow_methods=["*"],  # Allows all HTTP methods (GET, POST, etc.)
     allow_headers=["*"],  # Allows all headers
 )
-
-# Configure Google Generative AI API Key
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-genai.configure(api_key=GOOGLE_API_KEY)
 
 
 @app.post("/generate-flashcards/")
@@ -48,6 +48,7 @@ async def generate_flashcards(summary: str = Form(...)):
 
 @app.get("/")
 async def root():
+    print(GOOGLE_API_KEY)
     """
     Simple GET endpoint to verify the service is running.
     """

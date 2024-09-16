@@ -3,89 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audio Recorder and Transcription</title>
+    <title>Flashcard Generator</title>
 </head>
 <body>
-    <h1>Record Audio and Transcribe</h1>
+    <h1>Flashcard Generator</h1>
+    
+    <form id="flashcard-form">
+        <label for="summary">Enter Summary:</label><br><br>
+        <textarea id="summary" name="summary" rows="6" cols="50" placeholder="Enter the summary here..." required></textarea><br><br>
+        <button type="submit">Generate Flashcards</button>
+    </form>
 
-    <button id="start-record">Start Recording</button>
-    <button id="stop-record" disabled>Stop Recording</button>
-
-    <h2>Recorded Audio:</h2>
-    <audio id="audio-playback" controls></audio>
-
-    <h2>Transcription and Summary:</h2>
-    <button id="transcribe" disabled>Transcribe</button>
-
-    <h3>Transcription:</h3>
-    <pre id="transcription"></pre>
-
-    <h3>Summary:</h3>
-    <pre id="summary"></pre>
+    <h2>Generated Flashcards:</h2>
+    <ul id="flashcards"></ul>
 
     <script>
-        let mediaRecorder;
-        let audioChunks = [];
-        let audioBlob;
+        const form = document.getElementById('flashcard-form');
+        const flashcardsList = document.getElementById('flashcards');
 
-        const startRecordBtn = document.getElementById('start-record');
-        const stopRecordBtn = document.getElementById('stop-record');
-        const transcribeBtn = document.getElementById('transcribe');
-        const audioPlayback = document.getElementById('audio-playback');
-        const transcriptionElem = document.getElementById('transcription');
-        const summaryElem = document.getElementById('summary');
-
-        // Start recording audio
-        startRecordBtn.addEventListener('click', async () => {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRecorder = new MediaRecorder(stream);
-            audioChunks = [];
-
-            mediaRecorder.ondataavailable = (event) => {
-                audioChunks.push(event.data);
-            };
-
-            mediaRecorder.onstop = () => {
-                audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                const audioURL = URL.createObjectURL(audioBlob);
-                audioPlayback.src = audioURL;
-                transcribeBtn.disabled = false;
-            };
-
-            mediaRecorder.start();
-            startRecordBtn.disabled = true;
-            stopRecordBtn.disabled = false;
-        });
-
-        // Stop recording
-        stopRecordBtn.addEventListener('click', () => {
-            mediaRecorder.stop();
-            stopRecordBtn.disabled = true;
-            startRecordBtn.disabled = false;
-        });
-
-        // Transcribe the recorded audio
-        transcribeBtn.addEventListener('click', async () => {
-            const formData = new FormData();
-            formData.append('file', audioBlob, 'recording.wav');
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const formData = new FormData(form);
 
             try {
-                const response = await fetch('http://127.0.0.1:8000/transcribe/', {
+                const response = await fetch('http://127.0.0.1:8000/generate-flashcards/', {
                     method: 'POST',
                     body: formData
                 });
 
                 if (response.ok) {
                     const data = await response.json();
-                    transcriptionElem.textContent = data.transcription;
-                    summaryElem.textContent = data.summary;
+                    flashcardsList.innerHTML = ''; // Clear existing flashcards
+
+                    if (data.flashcards) {
+                        data.flashcards.forEach(flashcard => {
+                            const li = document.createElement('li');
+                            li.innerHTML = `<strong>Q:</strong> ${flashcard.question}<br><strong>A:</strong> ${flashcard.answer}`;
+                            flashcardsList.appendChild(li);
+                        });
+                    } else if (data.error) {
+                        flashcardsList.innerHTML = `<li>Error: ${data.error}</li>`;
+                    }
                 } else {
-                    transcriptionElem.textContent = "Error: Unable to transcribe.";
-                    summaryElem.textContent = "";
+                    flashcardsList.innerHTML = `<li>Error: Failed to fetch flashcards</li>`;
                 }
             } catch (error) {
-                transcriptionElem.textContent = "Error: " + error.message;
-                summaryElem.textContent = "";
+                flashcardsList.innerHTML = `<li>Error: ${error.message}</li>`;
             }
         });
     </script>
