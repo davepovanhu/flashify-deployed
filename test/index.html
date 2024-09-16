@@ -3,34 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audio Transcription Test</title>
+    <title>Audio Recorder and Transcription</title>
 </head>
 <body>
-    <h1>Upload Audio File for Transcription</h1>
+    <h1>Record Audio and Transcribe</h1>
 
-    <form id="upload-form" enctype="multipart/form-data">
-        <label for="audio-file">Select audio file:</label><br><br>
-        <input type="file" id="audio-file" name="file" accept="audio/*" required><br><br>
-        <button type="submit">Upload and Transcribe</button>
-    </form>
+    <button id="start-record">Start Recording</button>
+    <button id="stop-record" disabled>Stop Recording</button>
 
-    <h2>Transcription:</h2>
+    <h2>Recorded Audio:</h2>
+    <audio id="audio-playback" controls></audio>
+
+    <h2>Transcription and Summary:</h2>
+    <button id="transcribe" disabled>Transcribe</button>
+
+    <h3>Transcription:</h3>
     <pre id="transcription"></pre>
 
-    <h2>Summary:</h2>
+    <h3>Summary:</h3>
     <pre id="summary"></pre>
 
     <script>
-        const form = document.getElementById('upload-form');
+        let mediaRecorder;
+        let audioChunks = [];
+        let audioBlob;
+
+        const startRecordBtn = document.getElementById('start-record');
+        const stopRecordBtn = document.getElementById('stop-record');
+        const transcribeBtn = document.getElementById('transcribe');
+        const audioPlayback = document.getElementById('audio-playback');
         const transcriptionElem = document.getElementById('transcription');
         const summaryElem = document.getElementById('summary');
 
-        form.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            
+        // Start recording audio
+        startRecordBtn.addEventListener('click', async () => {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+
+            mediaRecorder.ondataavailable = (event) => {
+                audioChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = () => {
+                audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                const audioURL = URL.createObjectURL(audioBlob);
+                audioPlayback.src = audioURL;
+                transcribeBtn.disabled = false;
+            };
+
+            mediaRecorder.start();
+            startRecordBtn.disabled = true;
+            stopRecordBtn.disabled = false;
+        });
+
+        // Stop recording
+        stopRecordBtn.addEventListener('click', () => {
+            mediaRecorder.stop();
+            stopRecordBtn.disabled = true;
+            startRecordBtn.disabled = false;
+        });
+
+        // Transcribe the recorded audio
+        transcribeBtn.addEventListener('click', async () => {
             const formData = new FormData();
-            const fileInput = document.getElementById('audio-file');
-            formData.append('file', fileInput.files[0]);
+            formData.append('file', audioBlob, 'recording.wav');
 
             try {
                 const response = await fetch('http://127.0.0.1:8000/transcribe/', {

@@ -1,4 +1,6 @@
 fastapi
-uvicorn
-google-generativeai
+uvicorn[standard]
 python-dotenv
+google-cloud-storage
+google-generativeai
+aiofiles
