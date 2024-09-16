@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 import google.generativeai as genai
 import os
@@ -21,7 +21,7 @@ genai.configure(api_key=GOOGLE_API_KEY)
 
 
 @app.post("/generate-flashcards/")
-async def generate_flashcards(summary: str):
+async def generate_flashcards(summary: str = Form(...)):
     """
     Generate flashcards from the provided summary.
     If no summary is provided, return an error message.
@@ -44,5 +44,13 @@ async def generate_flashcards(summary: str):
 
     except Exception as e:
         return {"error": str(e)}
+
+
+@app.get("/")
+async def root():
+    """
+    Simple GET endpoint to verify the service is running.
+    """
+    return {"message": "Flashcard Generator is running! You can post summaries to /generate-flashcards to get flashcards."}
 
 # To run the app: uvicorn main:app --reload
