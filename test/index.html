@@ -3,52 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flashcard Generator</title>
+    <title>Flashcard Generator Test</title>
 </head>
 <body>
     <h1>Flashcard Generator</h1>
-    
-    <form id="flashcard-form">
+    <form id="flashcardForm">
         <label for="summary">Enter Summary:</label><br><br>
-        <textarea id="summary" name="summary" rows="6" cols="50" placeholder="Enter the summary here..." required></textarea><br><br>
+        <textarea id="summary" name="summary" rows="10" cols="50" placeholder="Enter the summary here"></textarea><br><br>
         <button type="submit">Generate Flashcards</button>
     </form>
 
     <h2>Generated Flashcards:</h2>
-    <ul id="flashcards"></ul>
+    <div id="flashcards"></div>
 
     <script>
-        const form = document.getElementById('flashcard-form');
-        const flashcardsList = document.getElementById('flashcards');
-
-        form.addEventListener('submit', async (event) => {
+        document.getElementById('flashcardForm').addEventListener('submit', async function(event) {
             event.preventDefault();
-            const formData = new FormData(form);
+            
+            const summary = document.getElementById('summary').value;
+            if (!summary) {
+                alert("Please enter a summary.");
+                return;
+            }
+
+            // Prepare form data
+            const formData = new FormData();
+            formData.append("summary", summary);
 
             try {
+                // Send POST request to the API
                 const response = await fetch('http://127.0.0.1:8000/generate-flashcards/', {
                     method: 'POST',
                     body: formData
                 });
 
-                if (response.ok) {
-                    const data = await response.json();
-                    flashcardsList.innerHTML = ''; // Clear existing flashcards
+                const result = await response.json();
 
-                    if (data.flashcards) {
-                        data.flashcards.forEach(flashcard => {
-                            const li = document.createElement('li');
-                            li.innerHTML = `<strong>Q:</strong> ${flashcard.question}<br><strong>A:</strong> ${flashcard.answer}`;
-                            flashcardsList.appendChild(li);
-                        });
-                    } else if (data.error) {
-                        flashcardsList.innerHTML = `<li>Error: ${data.error}</li>`;
-                    }
-                } else {
-                    flashcardsList.innerHTML = `<li>Error: Failed to fetch flashcards</li>`;
+                // Display flashcards in the HTML
+                const flashcardsDiv = document.getElementById('flashcards');
+                flashcardsDiv.innerHTML = ''; // Clear previous results
+
+                if (result.flashcards) {
+                    result.flashcards.forEach((flashcard, index) => {
+                        const flashcardDiv = document.createElement('div');
+                        flashcardDiv.innerHTML = `
+                            <strong>Card ${index + 1}</strong><br>
+                            <strong>Question:</strong> ${flashcard.question}<br>
+                            <strong>Answer:</strong> ${flashcard.answer}<br><br>
+                        `;
+                        flashcardsDiv.appendChild(flashcardDiv);
+                    });
+                } else if (result.error) {
+                    flashcardsDiv.innerHTML = `<p style="color:red;">Error: ${result.error}</p>`;
                 }
             } catch (error) {
-                flashcardsList.innerHTML = `<li>Error: ${error.message}</li>`;
+                document.getElementById('flashcards').innerHTML = `<p style="color:red;">Failed to generate flashcards: ${error.message}</p>`;
             }
         });
     </script>
